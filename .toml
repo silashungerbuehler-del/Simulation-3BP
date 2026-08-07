@@ -1,0 +1,17 @@
+[project]
+name = "threebody"
+version = "0.1.0"
+description = "Numerische Simulation des Zwei- und Dreikörperproblems (Maturaarbeit)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
