@@ -1,5 +1,5 @@
 import numpy as np
-from Anfangsbedingungen import *
+from nbody.Anfangsbedingungen import *
 
 # Die Variablen aus Anfangsbedingungen.py nach dem Import in diesen zwei Zeilen definiert, so weiter verwenden.
 # Dies kann man glaubs auch später im Notebook machen
@@ -75,7 +75,7 @@ def calculate_total_momentum(y, m):
     N, r, v = split_condition(y, m)
 
     # P = m * v
-    momentum_per_body = m.reshape(N, 1, 1)*v
+    momentum_per_body = m.reshape(N, 1, 1) * v
 
     # Der Gesamtimpuls ist die Summe aller Körper
     P_tot = np.sum(momentum_per_body, axis=0)
@@ -92,7 +92,8 @@ def calculate_center_of_mass(y, m):
     R_CM = np.sum(r_m, axis = 0) / M_tot
     return R_CM
 
-def calculate_total_linear_momentum(y, m):
+# Im Prinzip eine Unnötige Funktion, ich habe sie einefach noch stehen lassen, falls ich sie mal noch für etwas kleines verwenden möchte.
+def calculate_velocity_of_center_of_mass(y, m):
     N, r, v = split_condition(y, m)
     M_tot = np.sum(m)
 
@@ -122,6 +123,7 @@ def calculate_total_energy(y, m, G):
     E_kin_tot = np.sum(E_kin_per_body, axis = 0)
 
     # potentielle Energie 
+    E_pot_tot = np.zeros(r.shape[2]) # sonst wäre E_pot_tot nicht definiert
     for i in range(N):
         for j in range(i+1, N):
             #relative Position der Körper berechnen
