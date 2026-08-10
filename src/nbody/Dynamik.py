@@ -1,10 +1,4 @@
 import numpy as np
-from nbody.Anfangsbedingungen import *
-
-# Die Variablen aus Anfangsbedingungen.py nach dem Import in diesen zwei Zeilen definiert, so weiter verwenden.
-# Dies kann man glaubs auch später im Notebook machen
-y0_2bp, m_2bp, G_2bp = initial_conditions_2bp()
-y0_3bp, m_3bp, G_3bp = initial_conditions_3bp()
 
 def two_body_equations(t, y0, m, G):
     #Die Vektoren für die Bewegungelichung definieren

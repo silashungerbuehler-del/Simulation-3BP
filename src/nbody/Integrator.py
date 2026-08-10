@@ -1,14 +1,9 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 from nbody.Dynamik import n_body_equations
-from nbody.Anfangsbedingungen import initial_conditions_2bp
-import matplotlib.pyplot as plt
 
-# solve_ivp(fun, t_span, y0, method='RK45', t_eval=None, dense_output=False, events=None, vectorized=False, args=None, **options)
+# solve_ivp(fun, t_span, y0, method="RK45", t_eval=None, dense_output=False, events=None, vectorized=False, args=None, **options)
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
-
-# Die Variablen aus Anfangsbedingungen.py nach dem Import in diesen zwei Zeilen definiert, so weiter verwenden. noch verallgemeinern!!
-y0, m, G = initial_conditions_2bp()
 
 # t_start hätte ich fix bei 0 gelassen, t_end und frames im Notebook bei entsprecheneden Sim. definieren, da nicht immer gleich gewünscht
 def run_n_body_simulation(y0, m, G, t_start=0, t_end=100, frames=2000):
@@ -20,7 +15,7 @@ def run_n_body_simulation(y0, m, G, t_start=0, t_end=100, frames=2000):
         fun=n_body_equations,
         t_span=(t_start, t_end),
         y0=y0, 
-        method='DOP853',
+        method="DOP853",
         args=(m, G),
         rtol=1e-10, # Könnte auch auf 1e-12
         atol=1e-10, # Könnte auch auf 1e-12
