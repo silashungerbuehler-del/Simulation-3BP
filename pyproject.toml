@@ -1,7 +1,7 @@
 [project]
-name = "threebody"
+name = "Simulation 3BP"
 version = "0.1.0"
-description = "Numerische Simulation des Zwei- und Dreikörperproblems (Maturaarbeit)"
+description = "Numerische Simulation des Zwei- und Dreikörperproblems (Maturarbeit)"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",

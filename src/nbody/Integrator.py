@@ -6,10 +6,10 @@ from nbody.Dynamik import n_body_equations
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
 
 # t_start hätte ich fix bei 0 gelassen, t_end und frames im Notebook bei entsprecheneden Sim. definieren, da nicht immer gleich gewünscht
-def run_n_body_simulation(y0, m, G, t_start=0, t_end=100, frames=2000):
+def run_n_body_simulation(y0, m, G, t_start, t_end, frames):
 
     # für solve_ivp
-    t_eval=np.linspace(t_start, t_end, frames)
+    t_eval=np.linspace(t_start, t_end, frames) # beieinflussen die arbeit des Integratos nicht (dort rtol/atol relevant), sonder die Form in der die Resultate gespeichert werden. Berechnert aus t_end/(frames-1)
 
     sol = solve_ivp(
         fun=n_body_equations,

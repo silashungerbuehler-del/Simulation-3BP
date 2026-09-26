@@ -7,6 +7,7 @@ from IPython.display import display
 
 # Die definierten Funktionen aus Dynamik.py importieren
 from nbody.Dynamik import split_condition, calculate_center_of_mass, calculate_total_angular_momentum, calculate_total_energy, calculate_total_momentum
+import nbody.Integrator as int
 
 # --- Funktion für die Statische visualisierung der Simulation ---
 # Aus Dynamik ist hier split_condition und calculate_center_of_mass relevant
@@ -270,7 +271,7 @@ def plot_conservation_of_energy(y, m, G, t):
     ax.set_xlabel("Zeit t")
     ax.set_ylabel("relativer Fehler")
     ax.grid(True, alpha=0.7, linestyle="--")
-
+    
     return fig, ax
 
 def plot_conservation_of_momentum(y, m, t):
@@ -311,3 +312,161 @@ def plot_conservation_of_angular_momentum(y, m, t):
     ax.grid(True, linestyle="--", alpha=0.7)
     
     return fig, ax
+
+# --- Die Berechnung der Units zur Normierung ---
+
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class NBodyUnits:
+    M0: float
+    L0: float
+    T0: float
+    V0: float
+
+def compute_nbody_units(m: np.ndarray, r: np.ndarray, G: float) -> NBodyUnits: # Der --> weisst die Werte der class NBodyUnits zu
+    
+    # Berechnet M0, L0, T0, V0 einmalig aus einem Referenzzustand.
+    # L0 = harmonisches Mittel aller paarweisen Abstände bei t=0 (vgl. Heggie & Mathieu, Virialradius).
+    
+    M0 = np.sum(m)
+    N = len(m)
+    inv_r = [1.0/np.linalg.norm(r[i]-r[j]) for i in range(N) for j in range(i+1, N)]
+    L0 = 1.0 / np.mean(inv_r)
+    T0 = np.sqrt(L0**3 / (G*M0))
+    V0 = L0 / T0
+    return NBodyUnits(M0=M0, L0=L0, T0=T0, V0=V0)
+
+@dataclass
+class NormalizedSolution:
+    t: np.ndarray
+    y: np.ndarray
+    m: np.ndarray
+
+def normalize_trajectory(sol, units, N, m=None):
+    # das gleiche wie meine SplitCondition Funktion, einfach hier nicht implementiert
+    r = sol.y[0:3*N].reshape(N, 3, -1)
+    v = sol.y[3*N:6*N].reshape(N, 3, -1)
+    y = sol.y.copy()
+    y[0:3*N] /= units.L0
+    y[3*N:6*N] /= units.V0
+    r_n = r / units.L0
+    v_n = v / units.V0
+    t_n = sol.t / units.T0
+    m_n = m / units.M0 if m is not None else None
+    return NormalizedSolution(t=t_n, y=y, m=m_n)
+
+# --- Separation --- delta(t) = |y_pert_n(t) - y_ref_n(t)|
+
+def separation(sol_ref_n, sol_pert_n):
+    delta_y = sol_pert_n.y - sol_ref_n.y
+    # d(t)|delta(y(t)| über den gesamten Zustandsvektor
+    d = np.linalg.norm(delta_y, axis=0)
+    return sol_ref_n.t, d # sol_ref_n.t um die Zeitachse für den Plot mitzugeben 
+
+# --- Perioden berechnen ---
+
+def period_euler(m_ref, a, G):
+    omega = np.sqrt(5.0 * G * m_ref / (4.0 * a**3))
+    return 2*np.pi / omega
+
+def period_lagrange(m_ref, a, G):
+    M = np.sum(m_ref)
+    omega = np.sqrt(G * M / a**3)
+    return 2*np.pi / omega
+
+# --- Pediodizität überprüfen ---
+
+def sample_at_period_multiples(sol_norm, n_pts_per_T):
+    y_samples = sol_norm.y[:, ::n_pts_per_T] # :: = jedes n.te Element auswählen (sclicing)
+    t_samples = sol_norm.t[::n_pts_per_T]
+    return t_samples, y_samples
+
+def period_deltas(y_samples, mode):
+    # mode = vs_initial: Immer verglichen mit dem Anfangszustand, globalen Drift
+    # mode = consecutive: Immer verglichen mit dem vorherigen Zustand
+    if mode == "vs_initial":
+        deltas = y_samples - y_samples[:, [0]] # gegen y(0)
+    elif mode == "consecutive":
+        deltas = np.diff(y_samples, axis=1) # Differenz zwischen dem aktuelle und vorherigen Zustand (y(t+1) - y(t))
+    else:
+        raise ValueError("mode muss vs_initial oder consecutive sein!")
+
+    delta_norms = np.linalg.norm(deltas, axis=0)
+    return delta_norms
+
+def plot_periodicity(sol_norm, n_pts_per_T, mode):
+    t_samples, y_samples = sample_at_period_multiples(sol_norm, n_pts_per_T)
+    delta_norms = period_deltas(y_samples, mode)
+
+    n_axis = np.arange(len(delta_norms)) if mode == "consecutive" else np.arange(len(t_samples)) #np.arange ähnlich wie pythons range(), für mode=="vs_initial" ein Delta pro salmple inkl. n=0, mode=="consecutive" ein Delta zw. je zwei Samples kein n=0
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(n_axis, delta_norms)
+    ax.set_xlabel("Anzahl Perioden $p$")
+    ax.set_ylabel(r"$\|\Delta \vec y\|$" + (" (vs. $t=0$)" if mode=='vs_initial' else " (konsekutiv)"))
+    ax.set_title("Zustandsabweichung nach $p$ Perioden")
+    ax.grid(True, which='both', alpha=0.3)
+    return fig, ax    
+
+# -- (largest) Lyapunov Exponent ---
+
+def to_norm_state(y_raw, units, N):
+    # rohen Zustandsvektor --> normierten Zustandsvektor (für Berechnung)
+    r_raw = y_raw[0:3*N]
+    v_raw = y_raw[3*N:6*N]
+    return np.concatenate([r_raw/units.L0, v_raw/units.V0])
+
+def to_raw_state(y_norm, units, N):
+    # normierten Zustandsvektor --> rohen Zustandsvektor (für Integrator)
+    r_norm = y_norm[0:3*N]
+    v_norm = y_norm[3*N:6*N]
+    return np.concatenate([r_norm*units.L0, v_norm*units.V0])
+
+def compute_lyapunov(y0_ref_raw, m, G, units, eps, tau_norm, n_steps, N=3, seed=None):
+    rng = np.random.default_rng(seed)
+    tau_raw = tau_norm * units.T0 # Tau in Integrationszeit berechnen
+
+    # Referenz- und Schattenbahn
+    y_ref = to_norm_state(y0_ref_raw, units, N)
+
+    # Zufällige, normierte Störrichtung (vereinfachter Enseble-Gedanke --> nur in eine zufällige Richtung)
+    delta_dir = rng.normal(size=y_ref.shape) # delta_dir = delta direction da diese zufällig 
+    delta_dir /= np.linalg.norm(delta_dir) # Auf Einheitslänge normieren
+
+    y_pert = y_ref + eps*delta_dir # Alle Werte des Zustandes leicht angepasst (nach zufällgein delt_dir); Der Abstand zw. der Ref. und der Schattenbahn genau eps
+
+    y_ref_raw = y0_ref_raw.copy()
+    y_pert_raw = to_raw_state(y_pert, units, N)
+
+    lambdas = np.zeros(n_steps)
+
+    for i in range(n_steps):
+        # Beide Bahnen um ein Tau weiter integrieren
+        # Frames = 2 da nur Start- und Endpunkt benögitg
+        sol_ref = int.run_n_body_simulation(y_ref_raw, m, G, t_start=0, t_end=tau_raw, frames=2)
+        sol_pert = int.run_n_body_simulation(y_pert_raw, m, G, t_start=0, t_end=tau_raw, frames=2)
+
+        y_ref_raw = sol_ref.y[:, -1] #Endzustand der Referenzbahn
+        y_pert_raw = sol_pert.y[:, -1] #Endzustand der Schattenbahn
+
+        # Separation im normierten Zustandsraum messen
+        y_ref = to_norm_state(y_ref_raw, units, N)
+        y_pert = to_norm_state(y_pert_raw, units, N)
+
+        d_vec = y_pert - y_ref 
+        d_i = np.linalg.norm(d_vec)
+
+        # lokaler Lyapunov Exponent dieses Schritts lambda_n = 1/tau ln(|d_n|/|delta x_0|)
+        lambdas[i] = np.log(d_i / eps) / tau_norm
+
+        # Renormierung: Schattenbahn entland d_vec zurück auf Abstand eps setzen
+        d_dir = d_vec / d_i # Richtung beibehalten
+        y_pert_renorm = y_ref + eps*d_dir # Neue Schattenbahn Pos.
+        y_pert_raw = to_raw_state(y_pert_renorm, units, N)
+        # y_ref_raw bleib unverändert!! nur Schattenbahn zurückgesetzt
+
+    lambda_max = np.mean(lambdas)
+    running_mean = np.cumsum(lambdas) / np.arange(1, n_steps+1) # laufender Mittelwert
+
+    return lambdas, running_mean, lambda_max
