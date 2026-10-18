@@ -68,6 +68,7 @@ def initial_conditions_lagrange(m_ref=None, delta_m=(0.0, 0.0, 0.0), delta_r=Non
             r[idx] += d
 
     # omega aus Referenzmasse (Gesamtmasse), Geschwindigkeit über v = omega * e_z x r
+    # Somit bei Positionsstörung v anhand der gestörten position berechnet. Omega aber anhand ungestörten.
     omega = np.sqrt(G * M / a**3)
     v = np.zeros_like(r)
     for i in range(3):
@@ -83,7 +84,7 @@ def initial_conditions_lagrange(m_ref=None, delta_m=(0.0, 0.0, 0.0), delta_r=Non
     y0 = np.concatenate((r.flatten(), v.flatten()))
     return y0, m, G, r, v # r, v separat zurückgeben, für die Unit-Berechnung
 
-def initial_conditions_strong_chaos(delta_m=(0.0, 0.0, 0.0), delta_r=None, delta_v=None):
+def initial_conditions_aperiodic(delta_m=(0.0, 0.0, 0.0), delta_r=None, delta_v=None):
     # Mit den inputs von delta_m, delta_r und delta_v direkt gestörte systeme berechnen lassen
     # delta_m: delta_m: (dm1, dm2, dm3) - Massenstörung, z.B. (1e-9, 0, 0)
     # delta_r, delta_v: dict {0,1,2: np.array([dx,dy,dz])} - Positions-/Geschw.-Störung
@@ -130,8 +131,8 @@ def initial_conditions_2bp():
 
     # Die Startgeschwindigkeiten (vx, vy, vz) der zwei Körper
     v = np.array([
-        [0.0, 0.0, 0.0],
-        [0.0, 10.0, 0.0]
+        [0.0, -m2/m1*10, 0.0],
+        [0.0, 10, 0.0]
     ], dtype=float)
 
     y0 = np.concatenate((r.flatten(), v.flatten()))

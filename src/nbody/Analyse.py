@@ -375,6 +375,19 @@ def period_lagrange(m_ref, a, G):
     omega = np.sqrt(G * M / a**3)
     return 2*np.pi / omega
 
+def period_2bp(m, r, v, G):
+    # Nach Prinzip des Kapitel 2 2BP
+    mu = G * np.sum(m)
+    r_rel = np.linalg.norm(r[1] - r[0])
+    v_rel = np.linalg.norm(v[1] - v[0])
+
+    inv_a = 2.0 / r_rel - v_rel**2 / mu
+    if inv_a <= 0:
+        raise ValueError("Bahn ist nicht gebunden (E >= 0), keine Periode definiert.")
+    a = 1.0 / inv_a
+
+    return 2*np.pi * np.sqrt(a**3 / mu)
+
 # --- Pediodizität überprüfen ---
 
 def sample_at_period_multiples(sol_norm, n_pts_per_T):
@@ -470,3 +483,13 @@ def compute_lyapunov(y0_ref_raw, m, G, units, eps, tau_norm, n_steps, N=3, seed=
     running_mean = np.cumsum(lambdas) / np.arange(1, n_steps+1) # laufender Mittelwert
 
     return lambdas, running_mean, lambda_max
+
+def lyapunov_time(lambda_max):
+    # Lyapunov-Zeit = 1/lambda_max in der selben Zeiteinheit wie lambda_max also hier T0
+    return 1.0 / lambda_max
+
+def time_horizon(lambda_max, epsilon_0, a):
+    # t_horizon = (1/lambda_max) * ln(a/epsilon_0)
+    # epsilon_0 ist die anfängliche Unsicherheit gleich wie bei Renormierungsmethode eps_final
+    # a ist die Toleranzschwelle, ab der Vorhersage "verloren"
+    return (1.0/lambda_max) * np.log(a/epsilon_0)

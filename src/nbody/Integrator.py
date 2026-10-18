@@ -9,7 +9,7 @@ from nbody.Dynamik import n_body_equations
 def run_n_body_simulation(y0, m, G, t_start, t_end, frames):
 
     # für solve_ivp
-    t_eval=np.linspace(t_start, t_end, frames) # beieinflussen die arbeit des Integratos nicht (dort rtol/atol relevant), sonder die Form in der die Resultate gespeichert werden. Berechnert aus t_end/(frames-1)
+    t_eval=np.linspace(t_start, t_end, frames) # beieinflussen die Arbeit des Integratos nicht (dort rtol/atol relevant), sonder die Form in der die Resultate gespeichert werden. Berechnert aus t_end/(frames-1)
 
     sol = solve_ivp(
         fun=n_body_equations,
@@ -17,8 +17,8 @@ def run_n_body_simulation(y0, m, G, t_start, t_end, frames):
         y0=y0, 
         method="DOP853",
         args=(m, G),
-        rtol=1e-10, # Könnte auch auf 1e-12
-        atol=1e-10, # Könnte auch auf 1e-12
+        rtol=1e-10,
+        atol=1e-10,
         t_eval=t_eval
     )
     return sol
