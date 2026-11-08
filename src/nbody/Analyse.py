@@ -350,10 +350,10 @@ def normalize_trajectory(sol, units, N, m=None):
     y = sol.y.copy()
     y[0:3*N] /= units.L0
     y[3*N:6*N] /= units.V0
-    r_n = r / units.L0
+    r_n = r/units.L0
     v_n = v / units.V0
     t_n = sol.t / units.T0
-    m_n = m / units.M0 if m is not None else None
+    m_n = m /units.M0 if m is not None else None
     return NormalizedSolution(t=t_n, y=y, m=m_n)
 
 # --- Separation --- delta(t) = |y_pert_n(t) - y_ref_n(t)|

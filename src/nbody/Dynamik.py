@@ -1,24 +1,5 @@
 import numpy as np
 
-def two_body_equations(t, y0, m, G):
-    #Die Vektoren für die Bewegungelichung definieren
-    r1 = y0[0:3]
-    r2 = y0[3:6]
-    v1 = y0[6:9]
-    v2 = y0[9:12]
-
-    # Relativvektoren definieren nach dem Prinzip rji = ri - rj (--> F12 mit r21 also r1 - r2)
-    # Bei Schriftlichen Teil MA r_vec = r1 - r2 also r21 (für a1)
-    r_vec = r1 - r2
-    r_mag = np.linalg.norm(r_vec) # "mag" für magnitude, als Betrag
-
-    # Die Vekotren in der Bewegungsgleichung einsetzen
-    a1 = -G * m[1]/(r_mag**3) * r_vec
-    a2 = G* m[0]/(r_mag**3) * r_vec
-
-    # Den Zustandsvektor anpassen
-    return np.concatenate((v1, v2, a1, a2))
-
 # ----------------------------------
 # Wird für den Integrator gebraucht:
 # ----------------------------------
@@ -34,7 +15,7 @@ def n_body_equations(t, y, m, G):
     # Durch Broadcasting die Diemensionen: (ri) N,1,3 - (rj)1,N,3 --> N,N,3
     rji = r[:, None, :] - r[None, :, :]
 
-    # Hier ist die Diagonale aber Null, was bei der Division durch rji zu einem Problem wird --> hier angepasst, und Physik stimmt immer noch
+    # Hier ist die Diagonale Null, was bei der Division durch rji zu einem Problem wird --> hier angepasst, und Physik stimmt immer noch
     # Zuerst Betrag definieren --> axis = -1 so letzte Achse gewählt hier also die Koordinaten x,y,z von denen wir auch den Betrag wollen
     rji_mag = np.linalg.norm(rji, axis=-1)
     # Division durch Null verhindern
