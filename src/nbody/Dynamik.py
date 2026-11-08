@@ -33,7 +33,6 @@ def n_body_equations(t, y, m, G):
 # ------------------------------------------------
 
 # Erhaltungsgrössen zum Sanity Check
-#genauere Infos zu Gedanken in Arbeitsjournal Phase 3 (Könnte man auf allgemeines Projekt anwenden --> in README?)
 
 def split_condition(y, m):
     #Teil die Matrix, die man aus dem Integrator erhält in zwei Teile auf r und v. 
